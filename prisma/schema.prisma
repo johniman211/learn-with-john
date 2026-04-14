@@ -1,0 +1,491 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum PurchaseStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  name      String
+  email     String   @unique
+  imageUrl  String?
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses                Course[]
+  purchases              Purchase[]
+  reviews                Review[]
+  lessonProgress         LessonProgress[]
+  certificates           Certificate[]
+  notifications          Notification[]
+  quizAttempts           QuizAttempt[]
+  assignmentSubmissions  AssignmentSubmission[]
+  discussions            Discussion[]
+  notes                  Note[]
+  bookmarks              Bookmark[]
+  announcements          Announcement[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses Course[]
+}
+
+model Course {
+  id              String   @id @default(uuid())
+  title           String
+  slug            String?  @unique
+  description     String?  @db.Text
+  imageUrl        String?
+  previewVideoUrl String?
+  price           Float?
+  currency        String   @default("KES")
+  isPublished     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  sections     Section[]
+  purchases    Purchase[]
+  reviews      Review[]
+  certificates Certificate[]
+  coupons      Coupon[]
+  bookmarks      Bookmark[]
+  announcements  Announcement[]
+
+  @@index([categoryId])
+  @@index([profileId])
+}
+
+model Section {
+  id        String   @id @default(uuid())
+  title     String
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courseId String
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessons Lesson[]
+
+  @@index([courseId])
+}
+
+model Lesson {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  content     String?  @db.Text
+  videoUrl    String?
+  position    Int
+  isPublished Boolean  @default(false)
+  isFree      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sectionId String
+  section   Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  muxData     MuxData?
+  attachments Attachment[]
+  progress    LessonProgress[]
+  quizzes     Quiz[]
+  assignments Assignment[]
+  discussions Discussion[]
+  notes       Note[]
+
+  @@index([sectionId])
+}
+
+model MuxData {
+  id         String  @id @default(uuid())
+  assetId    String
+  playbackId String?
+
+  lessonId String @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+model Purchase {
+  id              String         @id @default(uuid())
+  status          PurchaseStatus @default(PENDING)
+  amount          Float
+  currency        String         @default("KES")
+  paymentMethod   String?
+  gatewayCode     String?
+  transactionId   String?        @unique
+  orderTrackingId String?        @unique
+  rejectionReason String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, courseId])
+  @@index([courseId])
+  @@index([status])
+  @@index([gatewayCode])
+}
+
+model LessonProgress {
+  id          String   @id @default(uuid())
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, lessonId])
+  @@index([lessonId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, courseId])
+  @@index([courseId])
+}
+
+model Quiz {
+  id        String   @id @default(uuid())
+  title     String
+  passMark  Int      @default(70)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessonId String   @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([lessonId])
+}
+
+model QuizQuestion {
+  id            String   @id @default(uuid())
+  question      String   @db.Text
+  options       String[]
+  correctAnswer Int
+  position      Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  quizId String
+  quiz   Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+}
+
+model Certificate {
+  id         String   @id @default(uuid())
+  uniqueCode String   @unique @default(uuid())
+  pdfUrl     String?
+  issueDate  DateTime @default(now())
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, courseId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model CurrencyRate {
+  id        String   @id @default(uuid())
+  fromCode  String
+  toCode    String
+  rate      Float
+  updatedAt DateTime @updatedAt
+
+  @@unique([fromCode, toCode])
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  score     Int
+  passed    Boolean
+  answers   Int[]
+  createdAt DateTime @default(now())
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  quizId String
+  quiz   Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([quizId])
+}
+
+model Coupon {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  discount    Float
+  isPercent   Boolean  @default(true)
+  maxUses     Int?     @default(0)
+  timesUsed   Int      @default(0)
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  courseId String?
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+}
+
+model Assignment {
+  id           String   @id @default(uuid())
+  title        String
+  instructions String   @db.Text
+  maxScore     Int      @default(100)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lessonId String @unique
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  submissions AssignmentSubmission[]
+
+  @@index([lessonId])
+}
+
+model AssignmentSubmission {
+  id         String   @id @default(uuid())
+  fileUrl    String?
+  notes      String?  @db.Text
+  score      Int?
+  feedback   String?  @db.Text
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, assignmentId])
+  @@index([assignmentId])
+}
+
+model Discussion {
+  id        String   @id @default(uuid())
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   Discussion?  @relation("DiscussionReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Discussion[] @relation("DiscussionReplies")
+
+  @@index([lessonId])
+  @@index([parentId])
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  courseId String
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, courseId])
+  @@index([profileId])
+  @@index([courseId])
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, lessonId])
+  @@index([profileId])
+  @@index([lessonId])
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  courseId String?
+  course  Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([profileId])
+}
+
+model SiteConfig {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String @db.Text
+}
+
+// ── Payment Gateway Management ──────────────────────────────────────
+
+model PaymentGateway {
+  id                  String   @id @default(uuid())
+  code                String   @unique
+  name                String
+  displayName         String?
+  description         String?  @db.Text
+  logo                String?
+  category            String
+  supportedCountries  String[]
+  supportedCurrencies String[]
+  credentials         String?  @db.Text
+  feePercent          Float    @default(0)
+  feeFixed            Float    @default(0)
+  isActive            Boolean  @default(false)
+  isAvailable         Boolean  @default(true)
+  environment         String   @default("sandbox")
+  displayOrder        Int      @default(0)
+  minAmount           Float?
+  maxAmount           Float?
+  activatedBy         String?
+  activatedAt         DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  credentialFields    GatewayCredentialField[]
+  transactions        PaymentTransaction[]
+}
+
+model GatewayCredentialField {
+  id           String  @id @default(uuid())
+  gatewayCode  String
+  fieldName    String
+  fieldLabel   String
+  fieldType    String  @default("text")
+  placeholder  String?
+  isRequired   Boolean @default(true)
+  fieldOptions String?
+  sortOrder    Int     @default(0)
+  helpText     String?
+  defaultValue String?
+
+  gateway PaymentGateway @relation(fields: [gatewayCode], references: [code], onDelete: Cascade)
+
+  @@unique([gatewayCode, fieldName])
+  @@index([gatewayCode])
+}
+
+model PaymentTransaction {
+  id                String   @id @default(uuid())
+  orderId           String
+  gatewayCode       String
+  transactionRef    String?  @unique
+  externalRef       String?
+  amount            Float
+  currency          String
+  status            String   @default("pending")
+  gatewayResponse   String?  @db.Text
+  errorMessage      String?
+  paidAt            DateTime?
+  createdAt         DateTime @default(now())
+
+  gateway PaymentGateway @relation(fields: [gatewayCode], references: [code])
+
+  @@index([orderId])
+  @@index([gatewayCode])
+  @@index([status])
+}
+
+// Add gateway_code to purchases via the existing paymentMethod field
