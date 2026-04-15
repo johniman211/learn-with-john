@@ -64,10 +64,16 @@ export async function processPesapal(input: PaymentInitInput): Promise<PaymentIn
       gatewayResponse: res.data,
     };
   } catch (error: unknown) {
-    const err = error as { response?: { data?: unknown }; message?: string };
+    const err = error as { response?: { data?: unknown; status?: number }; message?: string };
+    console.error("[PESAPAL_GATEWAY]", err.message, err.response?.status, JSON.stringify(err.response?.data));
+    const detail = typeof err.response?.data === "object" && err.response?.data
+      ? (err.response.data as { message?: string; error?: { message?: string } })?.message
+        || (err.response.data as { error?: { message?: string } })?.error?.message
+        || JSON.stringify(err.response.data)
+      : err.message;
     return {
       success: false,
-      error: err.message || "Pesapal payment initiation failed",
+      error: detail || "Pesapal payment initiation failed",
       gatewayResponse: err.response?.data,
     };
   }

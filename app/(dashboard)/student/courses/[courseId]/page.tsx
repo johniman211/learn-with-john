@@ -38,7 +38,7 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
       where: { id: params.courseId, isPublished: true },
       include: {
         category: true,
-        profile: { select: { name: true } },
+        profile: { select: { name: true, imageUrl: true } },
         sections: {
           orderBy: { position: "asc" },
           include: {
@@ -144,11 +144,22 @@ export default async function CourseDetailPage({ params }: CourseDetailPageProps
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">{course.title}</h1>
             <div className="flex items-center gap-3 mt-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-xs font-bold text-blue-700">
-                  {course.profile.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
+              {course.profile.imageUrl ? (
+                <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                  <Image
+                    src={course.profile.imageUrl}
+                    alt={course.profile.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <span className="text-xs font-bold text-blue-700">
+                    {course.profile.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
               <div>
                 <p className="text-sm font-medium">{course.profile.name}</p>
                 <p className="text-xs text-muted-foreground">Instructor</p>

@@ -18,6 +18,10 @@ export async function processPaypal(input: PaymentInitInput): Promise<PaymentIni
   const isLive = (credentials.environment || environment) === "live";
   const baseUrl = isLive ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 
+  // PayPal only supports certain currencies
+  const supportedCurrencies = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CNY", "CHF", "HKD", "SGD", "SEK", "DKK", "PLN", "NOK", "CZK", "ILS", "MXN", "BRL", "MYR", "PHP", "THB", "TWD", "NZD"];
+  const paypalCurrency = supportedCurrencies.includes(currency) ? currency : "USD";
+
   try {
     const token = await getPayPalToken(credentials, isLive);
 
@@ -30,7 +34,7 @@ export async function processPaypal(input: PaymentInitInput): Promise<PaymentIni
             reference_id: orderId,
             description: `Enrollment: ${courseName}`,
             amount: {
-              currency_code: currency,
+              currency_code: paypalCurrency,
               value: amount.toFixed(2),
             },
           },

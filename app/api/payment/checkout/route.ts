@@ -104,7 +104,16 @@ export async function POST(req: Request) {
     // Decrypt gateway credentials
     let credentials: Record<string, string> = {};
     if (gateway.credentials) {
-      credentials = decryptCredentials(gateway.credentials);
+      try {
+        credentials = decryptCredentials(gateway.credentials);
+      } catch (decryptErr) {
+        console.error("[PAYMENT_CHECKOUT] Failed to decrypt credentials for", gatewayCode, decryptErr);
+        return NextResponse.json({ error: "Payment gateway configuration error" }, { status: 500 });
+      }
+    }
+
+    if (!credentials || Object.keys(credentials).length === 0) {
+      return NextResponse.json({ error: "Payment gateway not configured" }, { status: 400 });
     }
 
     // Process payment
@@ -126,6 +135,7 @@ export async function POST(req: Request) {
     });
 
     if (!result.success) {
+      console.error("[PAYMENT_CHECKOUT] Gateway error:", gatewayCode, result.error, result.gatewayResponse);
       return NextResponse.json(
         { error: result.error || "Payment initiation failed" },
         { status: 502 }

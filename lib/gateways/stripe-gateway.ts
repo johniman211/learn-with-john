@@ -15,7 +15,9 @@ export async function processStripe(input: PaymentInitInput): Promise<PaymentIni
     params.append("cancel_url", `${callbackUrl}?gateway=stripe&order=${orderId}&cancelled=1`);
     params.append("customer_email", studentEmail);
     params.append("client_reference_id", orderId);
-    params.append("line_items[0][price_data][currency]", currency.toLowerCase());
+    // Stripe supports most currencies but not SSP; fallback to USD
+    const stripeCurrency = ["SSP"].includes(currency) ? "usd" : currency.toLowerCase();
+    params.append("line_items[0][price_data][currency]", stripeCurrency);
     params.append("line_items[0][price_data][unit_amount]", Math.round(amount * 100).toString());
     params.append("line_items[0][price_data][product_data][name]", courseName);
     params.append("line_items[0][price_data][product_data][description]", `Course enrollment - Learn With John`);
