@@ -1,6 +1,8 @@
 import axios from "axios";
-import type { PaymentInitInput } from "./index";
+import { type PaymentInitInput, resolveCurrency } from "./index";
 import type { PaymentInitResult } from "./whatsapp-manual";
+
+const COINBASE_CURRENCIES = ["USD","EUR","GBP","BTC","ETH","USDT","USDC","CAD","AUD"];
 
 export async function processCoinbase(input: PaymentInitInput): Promise<PaymentInitResult> {
   const { credentials, orderId, amount, currency, courseName, studentName, callbackUrl } = input;
@@ -14,7 +16,7 @@ export async function processCoinbase(input: PaymentInitInput): Promise<PaymentI
         pricing_type: "fixed_price",
         local_price: {
           amount: amount.toFixed(2),
-          currency,
+          currency: resolveCurrency(currency, COINBASE_CURRENCIES, "USD"),
         },
         metadata: {
           order_id: orderId,

@@ -1,9 +1,12 @@
 import axios from "axios";
-import type { PaymentInitInput } from "./index";
+import { type PaymentInitInput, resolveCurrency } from "./index";
 import type { PaymentInitResult } from "./whatsapp-manual";
+
+const MTN_CURRENCIES = ["UGX","RWF","GHS","EUR","XAF","XOF"];
 
 export async function processMtnMomo(input: PaymentInitInput): Promise<PaymentInitResult> {
   const { credentials, orderId, amount, currency, studentPhone, webhookUrl, environment } = input;
+  const momoCurrency = resolveCurrency(currency, MTN_CURRENCIES, "EUR");
   const isLive = (credentials.environment || environment) === "live";
   const baseUrl = isLive
     ? "https://proxy.momoapi.mtn.com"
@@ -36,7 +39,7 @@ export async function processMtnMomo(input: PaymentInitInput): Promise<PaymentIn
       `${baseUrl}/collection/v1_0/requesttopay`,
       {
         amount: amount.toString(),
-        currency,
+        currency: momoCurrency,
         externalId: orderId,
         payer: {
           partyIdType: "MSISDN",

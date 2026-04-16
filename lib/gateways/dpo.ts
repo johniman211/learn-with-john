@@ -1,6 +1,8 @@
 import axios from "axios";
-import type { PaymentInitInput } from "./index";
+import { type PaymentInitInput, resolveCurrency } from "./index";
 import type { PaymentInitResult } from "./whatsapp-manual";
+
+const DPO_CURRENCIES = ["KES","UGX","TZS","USD","ZAR","GBP","EUR","SSP","GHS","RWF","ZMW","MWK","MZN","BWP"];
 
 export async function processDPO(input: PaymentInitInput): Promise<PaymentInitResult> {
   const { credentials, orderId, amount, currency, courseName, callbackUrl, environment } = input;
@@ -15,7 +17,7 @@ export async function processDPO(input: PaymentInitInput): Promise<PaymentInitRe
   <Request>createToken</Request>
   <Transaction>
     <PaymentAmount>${amount.toFixed(2)}</PaymentAmount>
-    <PaymentCurrency>${currency}</PaymentCurrency>
+    <PaymentCurrency>${resolveCurrency(currency, DPO_CURRENCIES, "USD")}</PaymentCurrency>
     <CompanyRef>${orderId}</CompanyRef>
     <RedirectURL>${callbackUrl}?gateway=dpo&amp;order=${orderId}</RedirectURL>
     <BackURL>${callbackUrl}?gateway=dpo&amp;order=${orderId}&amp;cancelled=1</BackURL>

@@ -1,6 +1,8 @@
 import axios from "axios";
-import type { PaymentInitInput } from "./index";
+import { type PaymentInitInput, resolveCurrency } from "./index";
 import type { PaymentInitResult } from "./whatsapp-manual";
+
+const FLUTTERWAVE_CURRENCIES = ["NGN","KES","UGX","TZS","GHS","ZAR","USD","EUR","GBP","RWF","XAF","XOF"];
 
 export async function processFlutterwave(input: PaymentInitInput): Promise<PaymentInitResult> {
   const { credentials, orderId, amount, currency, courseName, studentName, studentEmail, callbackUrl, environment } = input;
@@ -14,7 +16,7 @@ export async function processFlutterwave(input: PaymentInitInput): Promise<Payme
       {
         tx_ref: orderId,
         amount,
-        currency,
+        currency: resolveCurrency(currency, FLUTTERWAVE_CURRENCIES, "USD"),
         redirect_url: `${callbackUrl}?gateway=flutterwave&order=${orderId}`,
         customer: {
           email: studentEmail,

@@ -28,6 +28,18 @@ export interface PaymentInitInput {
   appUrl: string;
 }
 
+/**
+ * Returns a supported currency for the given gateway.
+ * If the course currency is not supported, falls back to a default.
+ */
+export function resolveCurrency(
+  currency: string,
+  supported: string[],
+  fallback: string = "USD"
+): string {
+  return supported.includes(currency.toUpperCase()) ? currency : fallback;
+}
+
 const processors: Record<string, (input: PaymentInitInput) => Promise<PaymentInitResult>> = {
   whatsapp_manual: processWhatsAppManual,
   dpo: processDPO,

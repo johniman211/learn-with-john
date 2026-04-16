@@ -1,6 +1,8 @@
 import axios from "axios";
-import type { PaymentInitInput } from "./index";
+import { type PaymentInitInput } from "./index";
 import type { PaymentInitResult } from "./whatsapp-manual";
+
+const STRIPE_UNSUPPORTED = ["SSP"];
 
 export async function processStripe(input: PaymentInitInput): Promise<PaymentInitResult> {
   const { credentials, orderId, amount, currency, courseName, studentEmail, callbackUrl } = input;
@@ -15,8 +17,7 @@ export async function processStripe(input: PaymentInitInput): Promise<PaymentIni
     params.append("cancel_url", `${callbackUrl}?gateway=stripe&order=${orderId}&cancelled=1`);
     params.append("customer_email", studentEmail);
     params.append("client_reference_id", orderId);
-    // Stripe supports most currencies but not SSP; fallback to USD
-    const stripeCurrency = ["SSP"].includes(currency) ? "usd" : currency.toLowerCase();
+    const stripeCurrency = STRIPE_UNSUPPORTED.includes(currency.toUpperCase()) ? "usd" : currency.toLowerCase();
     params.append("line_items[0][price_data][currency]", stripeCurrency);
     params.append("line_items[0][price_data][unit_amount]", Math.round(amount * 100).toString());
     params.append("line_items[0][price_data][product_data][name]", courseName);

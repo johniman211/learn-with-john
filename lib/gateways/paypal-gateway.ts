@@ -1,6 +1,8 @@
 import axios from "axios";
-import type { PaymentInitInput } from "./index";
+import { type PaymentInitInput, resolveCurrency } from "./index";
 import type { PaymentInitResult } from "./whatsapp-manual";
+
+const PAYPAL_CURRENCIES = ["USD","EUR","GBP","CAD","AUD","JPY","CNY","CHF","HKD","SGD","SEK","DKK","PLN","NOK","CZK","ILS","MXN","BRL","MYR","PHP","THB","TWD","NZD","RUB","INR"];
 
 async function getPayPalToken(credentials: Record<string, string>, isLive: boolean): Promise<string> {
   const baseUrl = isLive ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
@@ -18,9 +20,7 @@ export async function processPaypal(input: PaymentInitInput): Promise<PaymentIni
   const isLive = (credentials.environment || environment) === "live";
   const baseUrl = isLive ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 
-  // PayPal only supports certain currencies
-  const supportedCurrencies = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CNY", "CHF", "HKD", "SGD", "SEK", "DKK", "PLN", "NOK", "CZK", "ILS", "MXN", "BRL", "MYR", "PHP", "THB", "TWD", "NZD"];
-  const paypalCurrency = supportedCurrencies.includes(currency) ? currency : "USD";
+  const paypalCurrency = resolveCurrency(currency, PAYPAL_CURRENCIES, "USD");
 
   try {
     const token = await getPayPalToken(credentials, isLive);

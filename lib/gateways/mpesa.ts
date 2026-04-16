@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { PaymentInitInput } from "./index";
+import { type PaymentInitInput } from "./index";
 import type { PaymentInitResult } from "./whatsapp-manual";
 
 export async function processMpesa(input: PaymentInitInput): Promise<PaymentInitResult> {

@@ -1,6 +1,8 @@
 import axios from "axios";
-import type { PaymentInitInput } from "./index";
+import { type PaymentInitInput, resolveCurrency } from "./index";
 import type { PaymentInitResult } from "./whatsapp-manual";
+
+const PESAPAL_CURRENCIES = ["KES","UGX","TZS","RWF","USD","GBP","EUR"];
 
 async function getToken(credentials: Record<string, string>, isLive: boolean): Promise<string> {
   const baseUrl = isLive ? "https://pay.pesapal.com/v3" : "https://cybqa.pesapal.com/pesapalv3";
@@ -15,6 +17,7 @@ export async function processPesapal(input: PaymentInitInput): Promise<PaymentIn
   const { credentials, orderId, amount, currency, courseName, studentName, studentEmail, callbackUrl, webhookUrl, environment } = input;
   const isLive = (credentials.environment || environment) === "live";
   const baseUrl = isLive ? "https://pay.pesapal.com/v3" : "https://cybqa.pesapal.com/pesapalv3";
+  const pesapalCurrency = resolveCurrency(currency, PESAPAL_CURRENCIES, "USD");
 
   try {
     const token = await getToken(credentials, isLive);
@@ -36,7 +39,7 @@ export async function processPesapal(input: PaymentInitInput): Promise<PaymentIn
       `${baseUrl}/api/Transactions/SubmitOrderRequest`,
       {
         id: orderId,
-        currency,
+        currency: pesapalCurrency,
         amount,
         description: `Enrollment: ${courseName}`,
         callback_url: `${callbackUrl}?gateway=pesapal&order=${orderId}`,
